@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+    <script type="module" src="supabase.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Money Tracker - บันทึกรายรับรายจ่าย</title>
@@ -358,24 +359,42 @@
             event.target.closest('button').classList.add('selected');
         }
 
-        function saveTransaction() {
-            const amount = parseFloat(document.getElementById('amount').value);
-            const description = document.getElementById('description').value;
-            
-            if (!selectedType) {
-                alert('กรุณาเลือกประเภทรายการ');
-                return;
-            }
-            
-            if (selectedType === 'expense' && !selectedCategory) {
-                alert('กรุณาเลือกหมวดหมู่รายจ่าย');
-                return;
-            }
-            
-            if (!amount || amount <= 0) {
-                alert('กรุณาใส่จำนวนเงิน');
-                return;
-            }
+        async function saveTransaction() {
+    // ... validation code ...
+    
+    const transaction = {
+        type: selectedType,
+        category: selectedCategory,
+        amount: amount,
+        description: description,
+        date: new Date().toISOString()
+    };
+    
+    // บันทึกลง Supabase
+    if (window.supabaseDB) {
+        await window.supabaseDB.saveTransaction(transaction);
+    }
+    
+    // บันทึกลง localStorage (backup)
+    transactions.push(transaction);
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+    
+    // ... reset form ...
+    }
+            async function loadTransactions() {
+    if (window.supabaseDB) {
+        const data = await window.supabaseDB.getTransactions();
+        if (data && data.length > 0) {
+            transactions = data;
+            localStorage.setItem('transactions', JSON.stringify(transactions));
+        }
+    }
+    updateBalance();
+    renderCalendar();
+}
+
+// เรียกใช้ตอนโหลดหน้า
+window.addEventListener('load', loadTransactions);
             
             const transaction = {
                 id: Date.now(),
